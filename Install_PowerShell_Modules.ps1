@@ -90,12 +90,15 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 		, "ReportingServicesTools"
 		, "SqlServer"
 	)
+	
+	# Set InstallationPolicy for PSGallery repository to Trusted
+	Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
 
 	# Loop through $modules object and install each module
 	foreach ($module in $modules) {
 		Draw-Separator
 		Write-Output "Installing module: '$module'..."
-		Install-Module -Name $module -Scope CurrentUser -Repository PSGallery -InstallationPolicy Trusted -AcceptLicense -AllowPrerelease -Force
+		Install-Module -Name $module -Scope CurrentUser -Repository PSGallery -AcceptLicense -AllowPrerelease -Force
 	}
 
 	Draw-Separator
