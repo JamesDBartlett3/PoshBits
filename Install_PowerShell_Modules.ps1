@@ -7,6 +7,15 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 	exit
 } else {
 
+	Function Draw-Separator {
+	    [CmdletBinding()]
+	    Param(
+		[Parameter(Mandatory=$false)]
+		[int]$Length = $Host.UI.RawUI.WindowSize.Width
+	    )
+	    Write-Host ('-' * $Length)
+	}
+
 	# $isAdmin = (
 	# 	[Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 	# 	).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
@@ -72,12 +81,12 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 
 	# Loop through $modules object and install each module
 	foreach ($module in $modules) {
-		Write-Output "-----------------------------------------------------------------------------------------------"
+		Draw-Separator
 		Write-Output "Installing module: '$module'..."
 		Install-Module -Name $module -Scope CurrentUser -Repository PSGallery -AllowPrerelease
 	}
 
-	Write-Output "-----------------------------------------------------------------------------------------------"
+	Draw-Separator
 
 	# Update local help cache
 	Update-Help
