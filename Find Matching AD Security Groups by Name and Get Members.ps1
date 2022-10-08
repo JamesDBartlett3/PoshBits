@@ -1,3 +1,6 @@
+# TODO: Parameterize SearchTerm, GroupCategory
+# TODO: Add parameter to choose AD, AAD, or both
+
 [string]$searchTerm = "YOUR_SEARCH_TERM_HERE"
 $groups = Get-ADGroup -Filter "GroupCategory -eq 'Security' -and Name -like '*$searchTerm*'"
 ForEach($g in $groups) {
