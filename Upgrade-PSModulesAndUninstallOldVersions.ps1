@@ -6,6 +6,9 @@ This script will upgrade all installed PowerShell modules.
 After installing a new version of a module, it will uninstall 
 the old version(s).
 
+Usage: 
+pwsh -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/JamesDBartlett3/PoshBits/main/Upgrade-PSModulesAndUninstallOldVersions.ps1'))"
+
 Author: @JamesDBartlett3
 
 /################################################################>
