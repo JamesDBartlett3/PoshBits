@@ -1,5 +1,13 @@
-# To download and install, run this command in PowerShell:
-# PowerShell -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://gist.githubusercontent.com/JamesDBartlett3/40d4459e39402cbc30a73731e310a27c/raw/'))"
+<################################################################/
+
+Setup-DevWorkstation.ps1
+
+Usage:
+PowerShell -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/JamesDBartlett3/PoshBits/main/Setup-DevWorkstation.ps1'))"
+
+Author: @JamesDBartlett3
+
+/################################################################>
 
 #Install WinGet
 #Based on this gist: https://gist.github.com/Codebytes/29bf18015f6e93fca9421df73c6e512c
