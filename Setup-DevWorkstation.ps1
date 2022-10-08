@@ -7,6 +7,8 @@ PowerShell -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.
 
 Author: @JamesDBartlett3
 
+TODO: Handle admin
+
 /################################################################>
 
 #Install WinGet
