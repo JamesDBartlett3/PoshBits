@@ -95,7 +95,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 	foreach ($module in $modules) {
 		Draw-Separator
 		Write-Output "Installing module: '$module'..."
-		Install-Module -Name $module -Scope CurrentUser -Repository PSGallery -AllowPrerelease
+		Install-Module -Name $module -Scope CurrentUser -Repository PSGallery -InstallationPolicy Trusted -AcceptLicense -AllowPrerelease
 	}
 
 	Draw-Separator
