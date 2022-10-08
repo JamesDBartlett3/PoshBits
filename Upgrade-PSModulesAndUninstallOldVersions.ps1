@@ -15,6 +15,12 @@ Author: @JamesDBartlett3
 
 #Requires -Modules PSScriptTools
 
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    [System.Net.ServicePointManager]::DnsRefreshTimeout = 0
+} else {
+    Clear-DnsClientCached
+}
+
 Function Draw-Separator {
     [CmdletBinding()]
     Param(
