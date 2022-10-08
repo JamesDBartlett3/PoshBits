@@ -11,14 +11,14 @@ Author: @JamesDBartlett3
 
 /################################################################>
 
+[System.Net.ServicePointManager]::DnsRefreshTimeout = 0
+
 if ($PSVersionTable.PSVersion.Major -lt 7) {
-	[System.Net.ServicePointManager]::DnsRefreshTimeout = 0
 	Write-Output "Please run this script with PowerShell Core version 7.0 or later."
 	Write-Output "Press any key to exit..."
 	$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 	exit
 } else {
-	Clear-DnsClientCached
 	Function Draw-Separator {
 	    [CmdletBinding()]
 	    Param(
