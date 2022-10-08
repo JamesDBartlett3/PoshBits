@@ -95,12 +95,12 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 	foreach ($module in $modules) {
 		Draw-Separator
 		Write-Output "Installing module: '$module'..."
-		Install-Module -Name $module -Scope CurrentUser -Repository PSGallery -InstallationPolicy Trusted -AcceptLicense -AllowPrerelease
+		Install-Module -Name $module -Scope CurrentUser -Repository PSGallery -InstallationPolicy Trusted -AcceptLicense -AllowPrerelease -Force
 	}
 
 	Draw-Separator
 
 	# Update local help cache
-	Update-Help
+	Update-Help -ErrorAction SilentlyContinue
 
 }
