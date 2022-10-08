@@ -8,6 +8,7 @@ PowerShell -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.
 Author: @JamesDBartlett3
 
 TODO: Handle admin
+TODO: Add call to Install_PowerShell_Modules.ps1
 
 /################################################################>
 
