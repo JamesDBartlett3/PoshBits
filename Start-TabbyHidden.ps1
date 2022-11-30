@@ -33,5 +33,6 @@ function Set-WindowState {
 }
 
 Start-Process Tabby
+#TODO: Replace static sleep timer with a loop that waits 250ms on each iteration and exits when Tabby has launched
 Start-Sleep -Seconds 5
 Set-WindowState -State HIDE -MainWindowHandle ((Get-Process Tabby).MainWindowHandle | Sort-Object -Descending | Select-Object -First 1)
