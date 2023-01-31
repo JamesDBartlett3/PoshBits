@@ -51,5 +51,6 @@ function Compress-WebinarVideo {
     # }
     Rename-Item -LiteralPath $inputFileFullName -NewName $inputFileNewName
     Rename-Item -LiteralPath $tempFile -NewName $outputFileName
+    (Get-ChildItem -LiteralPath $inputFileFullName).LastWriteTime = Get-Date
 
 }
