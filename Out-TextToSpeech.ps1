@@ -4,16 +4,8 @@
 # Possible voices are: 
 #   - Microsoft David Desktop
 #   - Microsoft Zira Desktop
-#   - Microsoft Hazel Desktop
-#   - Microsoft Mark Desktop
-#   - Microsoft Mike Desktop
-#   - Microsoft Mary Desktop
-#   - Microsoft Sam Desktop
-#   - Microsoft Anna Desktop
-#   - Microsoft Elsa Desktop
-#   - Microsoft Laura Desktop
-#   - Microsoft Benjamin Desktop
-#   - Microsoft Hedda Desktop
+# For list of installed voices, run the following:
+# Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Speech\Voices\Tokens\*" | Get-ItemProperty | Select -ExpandProperty "(default)"
 
 
 function Out-TextToSpeech {
