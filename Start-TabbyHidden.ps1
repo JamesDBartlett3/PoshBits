@@ -32,19 +32,23 @@ function Set-WindowState {
   Write-Verbose ("Set Window Style on $MainWindowHandle to $State") 
 }
 
+# Launch Tabby
 Start-Process Tabby
 
-# Wait for Tabby to launch and then hide the window
-$tabbyMainWindowHandle = $null
-while ($true) {
-  $handles = (Get-Process Tabby).MainWindowHandle
-  for ($i = 0; $i -lt $handles.Count; $i++) {
-    $tabbyMainWindowHandle += $handles[$i]
-  }
-  if ($tabbyMainWindowHandle -gt 0) {
-    break
-  }
-  Start-Sleep -Milliseconds 250
+# Declare an integer variable to hold the handle of Tabby's main window
+[int32]$tabbyMainWindowHandle = 0
+
+# Wait for Tabby to launch, and then hide the window
+while ($tabbyMainWindowHandle -eq 0) {
+  # Declare an array to hold the handles of all of Tabby's windows
+  [array]$handles = (Get-Process Tabby).MainWindowHandle
+  # After Tabby is launched, but before its main window opens, the $handles array will only contain zeroes.
+  # Once the main window opens, its handle will be the only non-zero value in the array.
+  # So, we keep a running sum of the values of the $handles array, and as soon as the sum is non-zero, we'll know
+  # that the main window has opened, and that our running sum will be its handle.
+  $tabbyMainWindowHandle += ($handles.ToInt32() | Measure-Object -Sum).Sum
+  Start-Sleep -Milliseconds 500
 }
 
+# Call the Set-WindowState function to hide Tabby's main window
 Set-WindowState -State HIDE -MainWindowHandle $tabbyMainWindowHandle
