@@ -24,10 +24,10 @@ function Compress-WebinarVideo {
     )
 
     [string]$inputFileFullName = Get-ItemPropertyValue -LiteralPath $InputFile -Name FullName
-    # [string]$targetDir = $inputFileFullName | Split-Path -Path {$_}
+    [string]$targetDir = Get-ItemPropertyValue -LiteralPath $inputFile -Name DirectoryName
     [string]$inputFileBase = Get-ItemPropertyValue -LiteralPath $InputFile -Name BaseName
     [string]$inputFileExtension = Get-ItemPropertyValue -LiteralPath $InputFile -Name Extension
-    [string]$tempFile = "$($inputFileFullName)_temp_$($inputFileExtension)"
+    [string]$tempFile = Join-Path -Path $targetDir -ChildPath "$($inputFileBase)_temp$($inputFileExtension)"
     [string]$inputFileNewName = "$($inputFileBase)_original$($inputFileExtension)"
     [string]$outputFileName = $inputFileBase + $inputFileExtension
     [string]$outputVideoCodec = $VideoCodec ? "libx$($VideoCodec)" : "copy"
@@ -51,5 +51,6 @@ function Compress-WebinarVideo {
     # }
     Rename-Item -LiteralPath $inputFileFullName -NewName $inputFileNewName
     Rename-Item -LiteralPath $tempFile -NewName $outputFileName
+    (Get-ChildItem -LiteralPath $inputFileFullName).LastWriteTime = Get-Date
 
 }
