@@ -14,17 +14,19 @@ param(
   [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
     [string]$ArchiveFile,
   [Parameter(Mandatory=$false, Position=1, ValueFromPipeline=$true)]
-    [string]$DestinationFolder = $(Join-Path -Path $(Split-Path $ArchiveFile) -ChildPath (Split-Path $ArchiveFile -LeafBase))
+    [string]$DestinationFolder = $(Join-Path `
+      -LiteralPath $( Split-Path -LiteralPath $ArchiveFile) `
+      -ChildPath (Split-Path -LiteralPath $ArchiveFile -LeafBase))
 )
 
 # Check if the archive file exists
-if (!(Test-Path $ArchiveFile)) {
+if (!(Test-Path -LiteralPath $ArchiveFile)) {
   Write-Error "The archive file $ArchiveFile does not exist"
   return
 }
 
 try {
-  Expand-Archive -Path $ArchiveFile -DestinationPath $DestinationFolder
+  Expand-Archive -LiteralPath $ArchiveFile -DestinationPath $DestinationFolder
 } catch {
   Write-Error "Failed to expand the archive file $ArchiveFile"
 } finally {
