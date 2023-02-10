@@ -28,8 +28,8 @@ if (!(Test-Path -LiteralPath $ZipFile)) {
 # Check the file header to see if it is a zip file
 $contents = [string](Get-Content -Raw -Encoding Unknown -LiteralPath $ZipFile).ToCharArray()
 
+# If file is a zip file, attempt to expand it
 if ([convert]::tostring([convert]::toint32($contents[0]),16) -eq "4b50") {
-  # If file is a zip file, attempt to expand it
   try {
     Expand-Archive -LiteralPath $ZipFile -DestinationPath $DestinationFolder
   } catch {
@@ -43,5 +43,6 @@ if ([convert]::tostring([convert]::toint32($contents[0]),16) -eq "4b50") {
     }
   }
 } else {
+  # If the file is not a zip file, write a message to the console saying so
   Write-Error "The file $ZipFile is not a zip file"
 }
