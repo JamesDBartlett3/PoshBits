@@ -14,10 +14,10 @@ param(
   [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
     [string]$ZipFile,
   [Parameter(Mandatory=$false, Position=1, ValueFromPipeline=$true)]
-    [string]$DestinationFolder = $(Join-Path `
-      -LiteralPath $( Split-Path -LiteralPath $ZipFile) `
-      -ChildPath (Split-Path -LiteralPath $ZipFile -LeafBase))
+    [string]$DestinationFolder = $(Split-Path -LiteralPath $ZipFile)
 )
+
+$DestinationFolder = Join-Path -Path $DestinationFolder -ChildPath $(Split-Path -Path $ZipFile -LeafBase)
 
 # Check if the file exists
 if (!(Test-Path -LiteralPath $ZipFile)) {
