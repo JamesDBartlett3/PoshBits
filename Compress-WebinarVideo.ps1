@@ -1,6 +1,6 @@
 
 #------------------------------------------------------------------------------------------------------------------
-# Author:   James Bartlett @jamesdbartlett3
+# Author:   James Bartlett @jamesdbartlett3@techhub.social
 # Synopsis: Uses ffmpeg to compress a webinar video to a much more manageable size
 # Requires: ffmpeg CLI application, accessible in path
 #------------------------------------------------------------------------------------------------------------------
