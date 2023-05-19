@@ -22,6 +22,8 @@ function Compress-WebinarVideo {
         ,[Parameter(Mandatory=$False, ValueFromPipeline=$False)]
             [string]$TrimEnd
         # ,[Parameter(Mandatory=$False, ValueFromPipeline=$False)]
+        #     [switch]$KeepOriginal
+        # ,[Parameter(Mandatory=$False, ValueFromPipeline=$False)]
         #     [switch]$UseNvidiaGPU
         # ,[Parameter(Mandatory=$False, ValueFromPipeline=$False)]
         #     [switch]$UseAMDGPU
@@ -36,28 +38,25 @@ function Compress-WebinarVideo {
     [string]$outputFileName = $inputFileBase + $inputFileExtension
     [string]$outputVideoCodec = $VideoCodec ? "libx$($VideoCodec)" : "copy"
 
-    # if ($UseNvidiaGPU) {
-    #     ffmpeg `
-    #         -hwaccel cuda -hwaccel_output_format cuda `
-    #         -i $InputFile `
-    #         -c:a $outputAudioCodec -c:v $outputVideoCodec `
-    #         -vf fps=$FrameRate `
-    #         -ac 1 -ar 22050 `
-    #         $outputFile
-    # } else { 
-
-    $trimParams = $TrimStart ? `
-        "-ss $TrimStart" + $($TrimEnd ? " -to $TrimEnd" : "") : ""
+    $trimParams = $TrimStart ? "-ss $TrimStart" + $($TrimEnd ? " -to $TrimEnd" : "") : ""
     
-    ffmpeg `
-        -hwaccel auto `
-        -i $InputFile `
-        $trimParams `
-        -vf fps=$FrameRate `
-        -c:v $outputVideoCodec `
-        -ac 1 -ar 22050 `
-        $tempFile
-    # }
+    $ffmpegExpression = 
+        [string]::Concat(
+            "ffmpeg",
+            " -hwaccel auto",
+            " -i ""$InputFile""",
+            " $trimParams",
+            " -vf fps=$FrameRate",
+            " -c:v $outputVideoCodec",
+            " -ac 1 -ar 22050",
+            " ""$tempFile"""
+        )
+
+    Write-Host -ForegroundColor Green "`nRunning ffmpeg command:"
+    Write-Host -ForegroundColor Blue "`n`t$ffmpegExpression`n"
+
+    Invoke-Expression $ffmpegExpression
+
     Rename-Item -LiteralPath $inputFileFullName -NewName $inputFileNewName
     Rename-Item -LiteralPath $tempFile -NewName $outputFileName
     (Get-ChildItem -LiteralPath $inputFileFullName).LastWriteTime = Get-Date
