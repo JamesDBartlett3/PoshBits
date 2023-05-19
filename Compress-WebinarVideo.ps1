@@ -17,6 +17,10 @@ function Compress-WebinarVideo {
             [int]$FrameRate=10
         ,[Parameter(Mandatory=$False, Position=2, ValueFromPipeline=$False)]
             [string]$VideoCodec
+        ,[Parameter(Mandatory=$False, ValueFromPipeline=$False)]
+            [string]$TrimStart = "00:00:00"
+        ,[Parameter(Mandatory=$False, ValueFromPipeline=$False)]
+            [string]$TrimEnd
         # ,[Parameter(Mandatory=$False, ValueFromPipeline=$False)]
         #     [switch]$UseNvidiaGPU
         # ,[Parameter(Mandatory=$False, ValueFromPipeline=$False)]
@@ -40,14 +44,19 @@ function Compress-WebinarVideo {
     #         -vf fps=$FrameRate `
     #         -ac 1 -ar 22050 `
     #         $outputFile
-    # } else {     
-        ffmpeg `
-            -hwaccel auto `
-            -i $InputFile `
-            -vf fps=$FrameRate `
-            -c:v $outputVideoCodec `
-            -ac 1 -ar 22050 `
-            $tempFile
+    # } else { 
+
+    $trimParams = $TrimStart ? `
+        "-ss $TrimStart" + $($TrimEnd ? " -to $TrimEnd" : "") : ""
+    
+    ffmpeg `
+        -hwaccel auto `
+        -i $InputFile `
+        $trimParams `
+        -vf fps=$FrameRate `
+        -c:v $outputVideoCodec `
+        -ac 1 -ar 22050 `
+        $tempFile
     # }
     Rename-Item -LiteralPath $inputFileFullName -NewName $inputFileNewName
     Rename-Item -LiteralPath $tempFile -NewName $outputFileName
