@@ -12,10 +12,13 @@
 		The number of spaces to convert to tabs. Default is 2.
 	
 	.EXAMPLE
-		PS C:\> Format-IndentSpacesAsTabs -InputFile ".\MyScript.ps1"
+		PS C:\> Format-IndentSpacesAsTabs.ps1 -InputFile ".\MyScript.ps1"
+
+	.EXAMPLE
+		PS C:\> Format-IndentSpacesAsTabs.ps1 -InputFile ".\*.ps1"
 	
 	.EXAMPLE
-		PS C:\> Get-ChildItem -Path ".\*.ps1" | Format-IndentSpacesAsTabs -Indentation 4
+		PS C:\> Get-ChildItem -Path ".\*.ps1" | Format-IndentSpacesAsTabs.ps1 -Indentation 4
 	
 #>
 
@@ -26,7 +29,6 @@ Param(
 		Mandatory = $true,
 		ValueFromPipeline = $true
 	)]
-	[Alias("FullName")]
 	[ValidateNotNullOrEmpty()]
 	[string[]]$InputFile,
 	
@@ -51,14 +53,28 @@ Begin {
 
 Process {
 	
+	# Check if InputFile is a wildcard
+	If ([System.Management.Automation.WildcardPattern]::ContainsWildcardCharacters($InputFile)) {
+		
+		# Get the files
+		$InputFile = Get-ChildItem -Path $InputFile -File
+	
+	}
+	
 	# Loop through each file
 	ForEach ($file in $InputFile) {
+
+		# Resolve the file path
+		$filePath = $file | Resolve-Path -ErrorAction SilentlyContinue
 		
 		# Read the file
-		$content = Get-Content -LiteralPath $file
+		$content = Get-Content -LiteralPath $filePath
 		
 		# Replace the spaces with tabs
-		$content.Replace($pattern, $tab) | Set-Content -LiteralPath $file -Force
+		$content.Replace($pattern, $tab) | Set-Content -LiteralPath $filePath -Force
+		
+		# Clear the variables
+		Remove-Variable -Name filePath, content -ErrorAction SilentlyContinue
 		
 	}
 	
