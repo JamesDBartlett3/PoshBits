@@ -83,6 +83,6 @@ Process {
 End {
 	
 	# Clear the variables
-	Remove-Variable -Name tabWidth, tab, pattern -ErrorAction SilentlyContinue
+	Remove-Variable -Name tab, pattern -ErrorAction SilentlyContinue
 	
 }
