@@ -1,3 +1,5 @@
+# TODO: Merge or replace with: https://github.com/itpro-tips/PowerShell-Toolbox/blob/master/Get-MSIFileInformation.ps1
+
 Param (
 	[Parameter(Mandatory)][string]$FileName,
 	[Parameter()][ValidateSet("ProductVersion", "ProductCode")]
