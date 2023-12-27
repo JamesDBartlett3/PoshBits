@@ -33,7 +33,7 @@ $ffmpegExpression =
 	)
 
 Write-Host -ForegroundColor Green "`nRunning ffmpeg command:"
-Write-Host -ForegroundColor Blue "`n`t$ffmpegExpression`n"
+Write-Host -ForegroundColor Blue "`n$ffmpegExpression`n"
 
 Invoke-Expression $ffmpegExpression
 
