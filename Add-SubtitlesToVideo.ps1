@@ -14,8 +14,8 @@ Param(
 [string]$inputFileBase = Get-ItemPropertyValue -Path $inputVid -Name BaseName
 [string]$inputFileExtension = Get-ItemPropertyValue -Path $inputVid -Name Extension
 [string]$inputSub = Join-Path -Path $targetDir -ChildPath "$inputFileBase.$subtitleFileExtension"
-[string]$outputFile = $inputVid
 [string]$tempFile = "$inputFileBase.temp.$inputFileExtension"
+[string]$originalFile = "$($inputFileBase)_original$($inputFileExtension)"
 
 $ffmpegExpression = 
 	[string]::Concat(
@@ -33,6 +33,6 @@ Write-Host -ForegroundColor Blue "`n`t$ffmpegExpression`n"
 
 Invoke-Expression $ffmpegExpression
 
-Rename-Item -LiteralPath $inputVid -NewName "$($inputFileBase)_original.$($inputFileExtension)"
-Rename-Item -LiteralPath $tempFile -NewName $outputFile
-(Get-ChildItem -LiteralPath $inputVid).LastWriteTime = Get-Date
+Rename-Item -LiteralPath $inputVid -NewName $originalFile
+Rename-Item -LiteralPath $tempFile -NewName $inputVid
+(Get-ChildItem -LiteralPath $originalFile).LastWriteTime = Get-Date
