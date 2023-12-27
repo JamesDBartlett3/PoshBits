@@ -17,6 +17,10 @@ Param(
 [string]$tempFile = "$inputFileBase.temp.$inputFileExtension"
 [string]$originalFile = "$($inputFileBase)_original$($inputFileExtension)"
 
+if (Test-Path -LiteralPath $originalFile) {
+    $originalFile = $originalFile.Replace("_original$($inputFileExtension)", "_original_nosubs$($inputFileExtension)")
+}
+
 $ffmpegExpression = 
 	[string]::Concat(
 		"ffmpeg",
@@ -35,4 +39,4 @@ Invoke-Expression $ffmpegExpression
 
 Rename-Item -LiteralPath $inputVid -NewName $originalFile
 Rename-Item -LiteralPath $tempFile -NewName $inputVid
-(Get-ChildItem -LiteralPath $originalFile).LastWriteTime = Get-Date
+(Get-ChildItem -LiteralPath $inputVid).LastWriteTime = (Get-ChildItem -LiteralPath $originalFile).LastWriteTime
