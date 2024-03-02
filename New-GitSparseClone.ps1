@@ -29,17 +29,21 @@ Follow the author on:
 
 Function New-GitSparseClone {
 	param(
-		[Parameter(Mandatory, Position = 0)][string]$RepoUrl,
-		[Parameter(Position = 1)][string]$LocalDir = (Join-Path -Path $PWD -ChildPath (Split-Path -Path $RepoUrl -Leaf)),
-		[Parameter(Position = 2, ValueFromRemainingArguments = $true)][string[]]$SparseCheckoutPaths
+		[Parameter(Mandatory)][string]$RepoUrl,
+		[Parameter()][string]$LocalDir = (Join-Path -Path $PWD -ChildPath (Split-Path -Path $RepoUrl -Leaf)),
+		[Parameter(ValueFromRemainingArguments)][string[]]$SparseCheckoutPaths
 	)
 	New-Item -ItemType Directory -Force -Path $LocalDir
 	Set-Location -Path $LocalDir
 	git init
 	git remote add -f origin $RepoUrl
-	git config core.sparseCheckout true
+	$defaultBranch = (git remote show origin | ForEach-Object { if ($_ -match 'HEAD branch') { $_.Split()[-1] } })
+	git config core.sparsecheckout true
 	foreach ($path in $SparseCheckoutPaths) {
-		Add-Content -Path $LocalDir/.git/info/sparse-checkout -Value $path
+		Add-Content -Path ./.git/info/sparse-checkout -Value $path
 	}
-	git pull origin master
+	git fetch origin $defaultBranch
+	foreach ($path in $SparseCheckoutPaths) {
+		git -C $path pull origin $defaultBranch
+	}
 }
