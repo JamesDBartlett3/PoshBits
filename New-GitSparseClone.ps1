@@ -2,7 +2,7 @@
 .SYNOPSIS
 Clones a git repository with a sparse checkout.
 .DESCRIPTION
-Clones a git repository with a sparse checkout. This means that only the files and directories specified in the $SparseCheckoutPaths parameter will be downloaded.
+Clones a git repository with a sparse checkout. This means that only the files and directories specified in the $SparseCheckoutPaths parameter will be downloaded. This can be useful for large repositories where only a small subset of the files are needed.
 .PARAMETER RepoUrl
 The URL of the repository to clone.
 .PARAMETER LocalDir
