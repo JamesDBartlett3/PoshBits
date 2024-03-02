@@ -21,7 +21,7 @@ This function requires git to be installed and available in the PATH. It also re
 Based on and inspired by this bash script on Stack Overflow: https://stackoverflow.com/a/13738951
 .LINK
 Follow the author on:
-	- [GitHub](https://github.com/JamesBartlett3)
+	- [GitHub](https://github.com/JamesDBartlett3)
 	- [Mastodon](https://techhub.social/@jamesdbartlett3)
 	- [LinkedIn](https://www.linkedin.com/in/jamesdbartlett3)
 	- [Blog](https://datavolume.xyz)
