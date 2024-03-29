@@ -17,6 +17,7 @@ None - This function does not generate any pipeline outputs.
 New-GitSparseClone -RepoUrl "https://github.com/example/repo.git" -SparseCheckoutPaths "path/to/file.txt", "path/to/directory"
 .NOTES
 This function requires git to be installed and available in the PATH. It also requires that the user has the necessary permissions to clone the repository.
+TODO: Refactor using technique demonstrated here: https://github.blog/2020-01-17-bring-your-monorepo-down-to-size-with-sparse-checkout/
 .LINK
 Based on and inspired by this bash script on Stack Overflow: https://stackoverflow.com/a/13738951
 .LINK
