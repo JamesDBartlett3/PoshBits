@@ -28,25 +28,23 @@ Follow the author on:
 	- [Blog](https://datavolume.xyz)
 #>
 
-Function New-GitSparseClone {
-	param(
-		[Parameter(Mandatory)][string]$RepoUrl,
-		[Parameter()][string]$LocalDir = (Join-Path -Path $PWD -ChildPath (Split-Path -Path $RepoUrl -Leaf)),
-		[Parameter(ValueFromRemainingArguments)][string[]]$SparseCheckoutPaths
-	)
-	New-Item -ItemType Directory -Force -Path $LocalDir
-	Set-Location -Path $LocalDir
-	Write-Host "Cloning '$RepoUrl' into '$LocalDir' with sparse-checkout" -ForegroundColor Green
-	Invoke-Expression "git init; git remote add -f origin $RepoUrl"
-	$defaultBranch = (Invoke-Expression "git remote show origin" | ForEach-Object { if ($_ -match 'HEAD branch') { $_.Split()[-1] } })
-	git config core.sparsecheckout true
-	foreach ($path in $SparseCheckoutPaths) {
-		Write-Host "Adding $path to sparse-checkout" -ForegroundColor Green
-		Add-Content -Path ./.git/info/sparse-checkout -Value $path
-	}
-	Invoke-Expression "git switch $defaultBranch"
-	foreach ($path in $SparseCheckoutPaths) {
-		Write-Host "Pulling '$path' from '$defaultBranch' branch of '$RepoUrl'" -ForegroundColor Green
-		Invoke-Expression "git -C $path pull origin $defaultBranch"
-	}
+Param(
+	[Parameter(Mandatory)][string]$RepoUrl,
+	[Parameter()][string]$LocalDir = (Join-Path -Path $PWD -ChildPath (Split-Path -Path $RepoUrl -Leaf)),
+	[Parameter(ValueFromRemainingArguments)][string[]]$SparseCheckoutPaths
+)
+New-Item -ItemType Directory -Force -Path $LocalDir
+Set-Location -Path $LocalDir
+Write-Host "Cloning '$RepoUrl' into '$LocalDir' with sparse-checkout" -ForegroundColor Green
+Invoke-Expression "git init; git remote add -f origin $RepoUrl"
+$defaultBranch = (Invoke-Expression "git remote show origin" | ForEach-Object { if ($_ -match 'HEAD branch') { $_.Split()[-1] } })
+git config core.sparsecheckout true
+foreach ($path in $SparseCheckoutPaths) {
+	Write-Host "Adding $path to sparse-checkout" -ForegroundColor Green
+	Add-Content -Path ./.git/info/sparse-checkout -Value $path
+}
+Invoke-Expression "git switch $defaultBranch"
+foreach ($path in $SparseCheckoutPaths) {
+	Write-Host "Pulling '$path' from '$defaultBranch' branch of '$RepoUrl'" -ForegroundColor Green
+	Invoke-Expression "git -C $path pull origin $defaultBranch"
 }

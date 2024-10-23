@@ -1,4 +1,4 @@
-param(
+Param(
 	[Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
 	[string]$String,
 

@@ -1,6 +1,6 @@
 ﻿# Source: https://github.com/itpro-tips/PowerShell-Toolbox/blob/master/Get-MSIFileInformation.ps1
 
-param(
+Param(
   [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
   [ValidateNotNullOrEmpty()]
   [System.IO.FileInfo[]]$FilePath

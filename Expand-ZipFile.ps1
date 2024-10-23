@@ -36,7 +36,7 @@
 	[Follow the author on LinkedIn](https://www.linkedin.com/in/jamesdbartlett3)
 #>
 
-param(
+Param(
 	[Parameter(Mandatory, ValueFromPipelineByPropertyName)][Alias("FullName")][string]$ZipFile
 	, [Parameter()][string]$DestinationFolder
 	, [Parameter()][switch]$Overwrite
