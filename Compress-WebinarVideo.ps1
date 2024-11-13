@@ -55,10 +55,12 @@ $ffmpegExpression =
 	"ffmpeg",
 	" -hwaccel auto",
 	" -i ""$InputFile""",
+	" -map 0:v:0 -map 0:a:0 -map 0:s:0",
 	"$trimParams",
 	" -vf fps=$FrameRate",
 	" -c:v $outputVideoCodec",
 	" -ac 1 -ar 22050",
+	" -c:s mov_text -metadata:s:s:0 language=eng",
 	" ""$tempFile"""
 )
 
