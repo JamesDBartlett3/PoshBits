@@ -38,6 +38,7 @@ $ErrorActionPreference = "Stop"
 [string]$inputFileNewName = "$($inputFileBase)_original$($inputFileExtension)"
 [string]$outputFileName = $inputFileBase + $inputFileExtension
 [string]$outputVideoCodec = $VideoCodec ?? "copy"
+[string]$appleCompatibility = $VideoCodec -like "*hevc*" -or $VideoCodec -like "*265*" ? " -tag hvc1" : ""
 
 $trimParams = $TrimStart ? " -ss $TrimStart" + $($TrimEnd ? " -to $TrimEnd" : "") : ""
 	
@@ -48,7 +49,7 @@ $ffmpegExpression = [string]::Concat(
 	" -map 0:v:0? -map 0:a:0? -map 0:s:0?",
 	"$trimParams",
 	" -vf fps=$FrameRate",
-	" -c:v $outputVideoCodec",
+	" -c:v $outputVideoCodec$($appleCompatibility)",
 	" -ac 1 -ar 22050",
 	" -c:s mov_text -metadata:s:s:0 language=eng",
 	" ""$tempFile"""
