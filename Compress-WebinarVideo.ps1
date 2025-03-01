@@ -17,14 +17,14 @@
 
 
 Param(
-	[Parameter(Mandatory = $True, Position = 0, ValueFromPipeline = $True)][string]$InputFile
-	,[Parameter(Mandatory = $False, Position = 1, ValueFromPipeline = $False)][int]$FrameRate = 10
-	,[Parameter(Mandatory = $False, Position = 2, ValueFromPipeline = $False)][ValidateSet(
-			"libx264", "libx265", "h264_nvenc", "hevc_nvenc", "h264_amf", 
-			"hevc_amf", "h264_qsv", "hevc_qsv", "h264_vaapi", "hevc_vaapi"
-		)][string]$VideoCodec
-	,[Parameter(Mandatory = $False, ValueFromPipeline = $False)][string]$TrimStart = "00:00:00"
-	,[Parameter(Mandatory = $False, ValueFromPipeline = $False)][string]$TrimEnd
+  [Parameter(Mandatory = $True, Position = 0, ValueFromPipeline = $True)][string]$InputFile
+  ,[Parameter(Mandatory = $False, Position = 1, ValueFromPipeline = $False)][int]$FrameRate = 10
+  ,[Parameter(Mandatory = $False, Position = 2, ValueFromPipeline = $False)][ValidateSet(
+      "libx264", "libx265", "h264_nvenc", "hevc_nvenc", "h264_amf", 
+      "hevc_amf", "h264_qsv", "hevc_qsv", "h264_vaapi", "hevc_vaapi"
+    )][string]$VideoCodec
+  ,[Parameter(Mandatory = $False, ValueFromPipeline = $False)][string]$TrimStart = "00:00:00"
+  ,[Parameter(Mandatory = $False, ValueFromPipeline = $False)][string]$TrimEnd
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,18 +41,18 @@ $ErrorActionPreference = "Stop"
 [string]$appleCompatibility = $VideoCodec -like "*hevc*" -or $VideoCodec -like "*265*" ? " -tag hvc1" : ""
 
 $trimParams = $TrimStart ? " -ss $TrimStart" + $($TrimEnd ? " -to $TrimEnd" : "") : ""
-	
+
 $ffmpegExpression = [string]::Concat(
-	"ffmpeg",
-	" -hwaccel auto",
-	" -i ""$InputFile""",
-	" -map 0:v:0? -map 0:a:0? -map 0:s:0?",
-	"$trimParams",
-	" -vf fps=$FrameRate",
-	" -c:v $outputVideoCodec$($appleCompatibility)",
-	" -ac 1 -ar 22050",
-	" -c:s mov_text -metadata:s:s:0 language=eng",
-	" ""$tempFile"""
+  "ffmpeg",
+  " -hwaccel auto",
+  " -i ""$InputFile""",
+  " -map 0:v:0? -map 0:a:0? -map 0:s:0?",
+  "$trimParams",
+  " -vf fps=$FrameRate",
+  " -c:v $outputVideoCodec$($appleCompatibility)",
+  " -ac 1 -ar 22050",
+  " -c:s mov_text -metadata:s:s:0 language=eng",
+  " ""$tempFile"""
 )
 
 Write-Host -ForegroundColor Green "`nRunning ffmpeg command:"
