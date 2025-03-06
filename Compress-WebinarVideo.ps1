@@ -20,7 +20,7 @@ Param(
   [Parameter(Mandatory = $True, Position = 0, ValueFromPipeline = $True)][string]$InputFile
   ,[Parameter(Mandatory = $False, Position = 1, ValueFromPipeline = $False)][int]$FrameRate = 10
   ,[Parameter(Mandatory = $False, Position = 2, ValueFromPipeline = $False)][ValidateSet(
-      "libx264", "libx265", "h264_nvenc", "hevc_nvenc", "h264_amf", 
+      "libx264", "libx265", "h264_nvenc", "hevc", "hevc_nvenc", "h264_amf", 
       "hevc_amf", "h264_qsv", "hevc_qsv", "h264_vaapi", "hevc_vaapi"
     )][string]$VideoCodec
   ,[Parameter(Mandatory = $False, ValueFromPipeline = $False)][string]$TrimStart = "00:00:00"
@@ -38,7 +38,7 @@ $ErrorActionPreference = "Stop"
 [string]$inputFileNewName = "$($inputFileBase)_original$($inputFileExtension)"
 [string]$outputFileName = $inputFileBase + $inputFileExtension
 [string]$outputVideoCodec = $VideoCodec ?? "copy"
-[string]$appleCompatibility = $VideoCodec -like "*hevc*" -or $VideoCodec -like "*265*" ? " -tag hvc1" : ""
+[string]$appleCompatibility = $VideoCodec -like "*hevc*" -or $VideoCodec -like "*265*" ? " -tag:v hvc1" : ""
 
 $trimParams = $TrimStart ? " -ss $TrimStart" + $($TrimEnd ? " -to $TrimEnd" : "") : ""
 
