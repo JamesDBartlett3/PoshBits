@@ -1,0 +1,32 @@
+[
+  {
+    "Name": "EDHM",
+    "Path": "C:\\Users\\James\\AppData\\Local\\EDHM-UI-V3\\EDHM-UI-V3.exe",
+    "RunAsAdmin": true,
+    "RedirectOutput": true,
+    "StartAction": "None",
+    "WaitMs": 8000,
+    "TimeoutMs": 10000
+  },
+  {
+    "Name": "EDMarketConnector",
+    "Path": "C:\\Program Files (x86)\\EDMarketConnector\\EDMarketConnector.exe",
+    "RunAsAdmin": false,
+    "RedirectOutput": true,
+    "StartAction": "Minimize",
+    "WaitMs": 500,
+    "TimeoutMs": 3000,
+    "WindowTitleRegex": "E:D Market Connector|EDMarketConnector"
+  },
+  {
+    "Name": "EDOdysseyMaterialsHelper",
+    "Path": "C:\\Users\\James\\AppData\\Local\\Elite Dangerous Odyssey Materials Helper Launcher\\Elite Dangerous Odyssey Materials Helper Launcher.exe",
+    "RunAsAdmin": false,
+    "RedirectOutput": true,
+    "StartAction": "Close",
+    "WaitMs": 3000,
+    "TimeoutMs": 15000,
+    "WindowTitleRegex": "ED Odyssey Materials Helper",
+    "ProcessNameRegex": "Elite Dangerous Odyssey Materials Helper"
+  }
+]

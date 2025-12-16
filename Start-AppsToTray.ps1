@@ -11,28 +11,43 @@
     Minimize, Close) and falls back if the first approach doesn't cause the app to hide. Use the
     `StartAction` field in the app config to prefer how the app should be triggered.
 
-.EXAMPLE
-    $apps = @(
-        [pscustomobject]@{ Name = 'Tabby'; Path = 'C:\Program Files\Tabby\Tabby.exe'; Args = ''; StartAction = 'Hide'; WaitMs = 4000 },
-        [pscustomobject]@{ Name = 'Dropbox'; Path = '$env:LOCALAPPDATA\\Dropbox\\client\\Dropbox.exe'; Args = ''; StartAction = 'Minimize'; WaitMs = 6000 },
-        [pscustomobject]@{ Name = 'MyApp'; Path = 'C:\Apps\\MyApp.exe'; Args = '--minimize'; StartAction = 'Auto'; WaitMs = 5000 },
-        [pscustomobject]@{ Name = 'ServerTool'; Path = 'C:\Program Files\Server\tool.exe'; Args = ''; StartAction = 'Minimize'; RunAsAdmin = $true; RedirectOutput = $true }
-    )
-    Start-AppsToTray -Apps $apps
+.PARAMETER Apps
+    Array of app configuration objects. Each object should have properties defined in CONFIGURATION PROPERTIES below.
 
-    # Or from JSON:
-    Start-AppsToTray -ConfigFile .\apps.json
+.PARAMETER ConfigFile
+    Path to a JSON file containing app configurations.
+
+.PARAMETER LogFile
+    Optional path to log file for diagnostic output.
+
+.EXAMPLE
+    # Run with config file
+    .\Start-AppsToTray.ps1 -ConfigFile .\my-apps.json
+
+.EXAMPLE
+    # Run with inline apps
+    $apps = @(
+        [pscustomobject]@{ Name = 'Tabby'; Path = 'C:\Program Files\Tabby\Tabby.exe'; StartAction = 'Hide'; WaitMs = 4000 }
+    )
+    .\Start-AppsToTray.ps1 -Apps $apps
+
+.EXAMPLE
+    # Use as library (dot-source to load functions)
+    . .\Start-AppsToTray.ps1
+    Start-AppsToTray -Apps $apps -LogFile $logPath
 
 .CONFIGURATION PROPERTIES (per app)
     Name           - Friendly name (optional)
     Path           - Path to executable (required). Environment variables are expanded.
     Args           - Command-line args (optional)
-    StartAction    - Preferred action: Auto (default) | Hide | Minimize | Close | ShowThenMinimize
+    StartAction    - Preferred action: Auto (default) | Hide | Minimize | Close | ShowThenMinimize | None
     StartStyle     - Optional start style: Normal (default) | MinimizedProcess | HiddenProcess (controls Start-Process WindowStyle)
     RunAsAdmin     - Optional boolean: $true to request running the app elevated (will prompt UAC if current session is not elevated)
     RedirectOutput - Optional boolean: $true (default) to redirect stdout/stderr to null; will be disabled when launching elevated via UAC prompt
     WaitMs         - How long to wait for the tray behavior after applying action (ms). Default 5000
     TimeoutMs      - How long to wait for the app window to appear after launch (ms). Default 8000
+    WindowTitleRegex - Optional regex pattern to match window title for complex process scenarios
+    ProcessNameRegex - Optional regex pattern to match process name for child process detection
 
 .NOTES
     - Behavior is "best-effort": some apps may not expose tray icons unless launched with their own
@@ -40,6 +55,18 @@
     - Running apps that require elevation from a non-elevated session may fail to start.
 
 #>
+[CmdletBinding(DefaultParameterSetName='CustomApps')]
+param(
+    [Parameter(ParameterSetName='CustomApps', Mandatory=$true, Position=0)]
+    [object[]]$Apps,
+    
+    [Parameter(ParameterSetName='ConfigFile', Mandatory=$true)]
+    [string]$ConfigFile,
+    
+    [Parameter(ParameterSetName='CustomApps')]
+    [Parameter(ParameterSetName='ConfigFile')]
+    [string]$LogFile
+)
 
 # Add Win32 functions for window manipulation
 try {
@@ -1103,16 +1130,111 @@ namespace Win32 {
     }
 #>
 
-# If you prefer module semantics, convert this script to a module and export functions there. Dot-source this script to use the functions in the current session (e.g. `. .\Start-AppsToTray.ps1`).
-# Export-ModuleMember cannot be used from a plain script file.
-
-<# USAGE NOTES
-- Create a JSON file like this:
-[
-  { "Name": "Tabby", "Path": "%ProgramFiles%\\Tabby\\Tabby.exe", "Args": "", "StartAction": "Hide", "WaitMs": 4000 },
-  { "Name": "Dropbox", "Path": "%LocalAppData%\\Programs\\Dropbox\\client\\Dropbox.exe", "StartAction": "Minimize", "WaitMs": 6000 }
+#region Script Execution
+# This block runs when the script is executed directly (not dot-sourced)
+if ($MyInvocation.InvocationName -ne '.') {
+    # Determine which apps to launch
+    $appsToLaunch = $null
+    
+    switch ($PSCmdlet.ParameterSetName) {
+        'CustomApps' {
+            $appsToLaunch = $Apps
+            Write-Verbose "Using apps provided via -Apps parameter"
+        }
+        'ConfigFile' {
+            if (Test-Path $ConfigFile) {
+                $appsToLaunch = Get-Content $ConfigFile -Raw | ConvertFrom-Json
+                Write-Verbose "Loaded apps from config file: $ConfigFile"
+            } else {
+                Write-Error "Config file not found: $ConfigFile"
+                exit 1
+            }
+        }
+        'DefaultApps' {
+            # Validate that default apps paths exist
+            $missingApps = @()
+            foreach ($app in $DefaultApps) {
+                $expandedPath = [System.Environment]::ExpandEnvironmentVariables($app.Path)
+                if (-not (Test-Path $expandedPath)) {
+                    $missingApps += "$($app.Name): $expandedPath"
+                }
+            }
+            
+            if ($missingApps.Count -gt 0) {
+                Write-Warning "Some default apps were not found:"
+                $missingApps | ForEach-Object { Write-Warning "  - $_" }
+                Write-Warning "`nEdit the `$DefaultApps section in this script to configure your apps,"
+                Write-Warning "or use -Apps or -ConfigFile parameters to specify apps."
+                
+                # Filter to only existing apps
+                $appsToLaunch = $DefaultApps | Where-Object {
+                    $expandedPath = [System.Environment]::ExpandEnvironmentVariables($_.Path)
+                    Test-Path $expandedPath
+                }
+                
+                if ($appsToLaunch.Count -eq 0) {
+                    Write-Error "No valid apps to launch. Please configure apps in the script or use -Apps/-ConfigFile parameters."
+                    exit 1
+                }
+                
+                Write-Host "`nLaunching $($appsToLaunch.Count) available app(s)..." -ForegroundColor Cyan
+            } else {
+                $appsToLaunch = $DefaultApps
+                Write-Verbose "Using default apps configuration"
+            }
+        }
+    }
+    
+    # Set default log file if not provided
+    if (-not $LogFile) {
+        $LogFile = Join-Path $env:TEMP "Start-AppsToTray_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+    "Name": "MyApp",
+    "Path": "C:\\Program Files\\MyApp\\MyApp.exe",
+    "StartAction": "Minimize",
+    "RunAsAdmin": false,
+    "RedirectOutput": true,
+    "WaitMs": 3000,
+    "TimeoutMs": 8000
+  }
 ]
 
-- Then run: Start-AppsToTray -ConfigFile .\apps.json
+Then run: .\Start-AppsToTray.ps1 -ConfigFile .\apps.json
 
-#>
+## Using as Library:
+Dot-source to load functions without execution:
+. .\Start-AppsToTray.ps1
+$apps = @([pscustomobject]@{ Name='Test'; Path='calc.exe'; StartAction='Minimize' })
+Start-AppsToTray -Apps $apps
+
+#>Using Config File (Recommended):
+Create a JSON file (e.g., my-apps.json):
+[
+  {
+    "Name": "MyApp",
+    "Path": "C:\\Program Files\\MyApp\\MyApp.exe",
+    "StartAction": "Minimize",
+    "RunAsAdmin": false,
+    "RedirectOutput": true,
+    "WaitMs": 3000,
+    "TimeoutMs": 8000
+  }
+]
+
+Then run: .\Start-AppsToTray.ps1 -ConfigFile .\my-apps.json
+
+## Using Inline Apps:
+$apps = @(
+    [pscustomobject]@{ 
+        Name = 'Calculator'
+        Path = 'C:\Windows\System32\calc.exe'
+        StartAction = 'Minimize'
+        WaitMs = 2000
+    }
+)
+.\Start-AppsToTray.ps1 -Apps $apps
+
+## Using as Library:
+Dot-source to load functions without execution:
+. .\Start-AppsToTray.ps1
+$apps = @([pscustomobject]@{ Name='Test'; Path='calc.exe'; StartAction='Minimize' })
+Start-AppsToTray -Apps $apps -LogFile $logPath
