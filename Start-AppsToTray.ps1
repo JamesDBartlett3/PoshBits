@@ -500,7 +500,7 @@ function Start-AppsToTray {
     function Write-Log {
         param([string]$Message)
         if ($LogFile) {
-            "$((Get-Date).ToString('o')) - $Message" | Out-File -FilePath $LogFile -Append -Encoding UTF8
+            "$(Get-Date -Format 'o') - $Message" | Out-File -FilePath $LogFile -Append -Encoding UTF8
         }
     }
 
@@ -518,25 +518,21 @@ function Start-AppsToTray {
     $launchedApps = @()
     
     foreach ($app in $Apps) {
-        Write-Log "Processing app object: $([System.Uri]::EscapeDataString(($app | ConvertTo-Json -Compress)))"
+        Write-Log "Processing app: Name=$name, Path=$path, StartAction=$startAction"
 
-        # Evaluate fields (avoid complex inline expressions inside hashtable for compatibility)
-        $name = if ($app -and $app.PSObject.Properties.Match('Name') -and $app.Name) { $app.Name } else { [System.IO.Path]::GetFileNameWithoutExtension($app.Path) }
-        $path = if ($app -and $app.PSObject.Properties.Match('Path') -and $app.Path) { [Environment]::ExpandEnvironmentVariables($app.Path) } else { $null }
-        $args = if ($app -and $app.PSObject.Properties.Match('Args')) { $app.Args } else { $null }
-        $startAction = if ($app -and $app.PSObject.Properties.Match('StartAction') -and $app.StartAction) { $app.StartAction } else { 'Auto' }
-        $waitMs = if ($app -and $app.PSObject.Properties.Match('WaitMs') -and $app.WaitMs) { $app.WaitMs } else { 5000 }
-        $timeoutMs = if ($app -and $app.PSObject.Properties.Match('TimeoutMs') -and $app.TimeoutMs) { $app.TimeoutMs } else { 8000 }
-        $spawnDelayMs = if ($app -and $app.PSObject.Properties.Match('SpawnDelayMs') -and $app.SpawnDelayMs) { $app.SpawnDelayMs } else { 250 }
-        $startStyle = if ($app -and $app.PSObject.Properties.Match('StartStyle') -and $app.StartStyle) { $app.StartStyle } else { 'Normal' }
-
-        # Precompute optional booleans to avoid inline if expressions in hashtable
-        $runAsAdmin = if ($app -and $app.PSObject.Properties.Match('RunAsAdmin')) { [bool]$app.RunAsAdmin } else { $false }
-        $redirectOutput = if ($app -and $app.PSObject.Properties.Match('RedirectOutput')) { [bool]$app.RedirectOutput } else { $true }
-        
-        # Extract optional regex patterns for process matching
-        $windowTitleRegex = if ($app -and $app.PSObject.Properties.Match('WindowTitleRegex') -and $app.WindowTitleRegex) { $app.WindowTitleRegex } else { $null }
-        $processNameRegex = if ($app -and $app.PSObject.Properties.Match('ProcessNameRegex') -and $app.ProcessNameRegex) { $app.ProcessNameRegex } else { $null }
+        # Evaluate fields with simplified property access
+        $name = if ($app.Name) { $app.Name } else { [System.IO.Path]::GetFileNameWithoutExtension($app.Path) }
+        $path = if ($app.Path) { [Environment]::ExpandEnvironmentVariables($app.Path) } else { $null }
+        $args = $app.Args
+        $startAction = if ($app.StartAction) { $app.StartAction } else { 'Auto' }
+        $waitMs = if ($app.WaitMs) { $app.WaitMs } else { 5000 }
+        $timeoutMs = if ($app.TimeoutMs) { $app.TimeoutMs } else { 8000 }
+        $spawnDelayMs = if ($app.SpawnDelayMs) { $app.SpawnDelayMs } else { 250 }
+        $startStyle = if ($app.StartStyle) { $app.StartStyle } else { 'Normal' }
+        $runAsAdmin = [bool]$app.RunAsAdmin
+        $redirectOutput = if ($null -ne $app.RedirectOutput) { [bool]$app.RedirectOutput } else { $true }
+        $windowTitleRegex = $app.WindowTitleRegex
+        $processNameRegex = $app.ProcessNameRegex
 
         $appObj = [PSCustomObject]@{
             Name = $name
@@ -952,91 +948,15 @@ if ($MyInvocation.InvocationName -ne '.') {
                 exit 1
             }
         }
-        'DefaultApps' {
-            # Validate that default apps paths exist
-            $missingApps = @()
-            foreach ($app in $DefaultApps) {
-                $expandedPath = [System.Environment]::ExpandEnvironmentVariables($app.Path)
-                if (-not (Test-Path $expandedPath)) {
-                    $missingApps += "$($app.Name): $expandedPath"
-                }
-            }
-            
-            if ($missingApps.Count -gt 0) {
-                Write-Warning "Some default apps were not found:"
-                $missingApps | ForEach-Object { Write-Warning "  - $_" }
-                Write-Warning "`nEdit the `$DefaultApps section in this script to configure your apps,"
-                Write-Warning "or use -Apps or -ConfigFile parameters to specify apps."
-                
-                # Filter to only existing apps
-                $appsToLaunch = $DefaultApps | Where-Object {
-                    $expandedPath = [System.Environment]::ExpandEnvironmentVariables($_.Path)
-                    Test-Path $expandedPath
-                }
-                
-                if ($appsToLaunch.Count -eq 0) {
-                    Write-Error "No valid apps to launch. Please configure apps in the script or use -Apps/-ConfigFile parameters."
-                    exit 1
-                }
-                
-                Write-Host "`nLaunching $($appsToLaunch.Count) available app(s)..." -ForegroundColor Cyan
-            } else {
-                $appsToLaunch = $DefaultApps
-                Write-Verbose "Using default apps configuration"
-            }
-        }
     }
     
     # Set default log file if not provided
     if (-not $LogFile) {
-        $LogFile = Join-Path $env:TEMP "Start-AppsToTray_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
-    "Name": "MyApp",
-    "Path": "C:\\Program Files\\MyApp\\MyApp.exe",
-    "StartAction": "Minimize",
-    "RunAsAdmin": false,
-    "RedirectOutput": true,
-    "WaitMs": 3000,
-    "TimeoutMs": 8000
-  }
-]
-
-Then run: .\Start-AppsToTray.ps1 -ConfigFile .\apps.json
-
-## Using as Library:
-Dot-source to load functions without execution:
-. .\Start-AppsToTray.ps1
-$apps = @([pscustomobject]@{ Name='Test'; Path='calc.exe'; StartAction='Minimize' })
-Start-AppsToTray -Apps $apps
-
-#>Using Config File (Recommended):
-Create a JSON file (e.g., my-apps.json):
-[
-  {
-    "Name": "MyApp",
-    "Path": "C:\\Program Files\\MyApp\\MyApp.exe",
-    "StartAction": "Minimize",
-    "RunAsAdmin": false,
-    "RedirectOutput": true,
-    "WaitMs": 3000,
-    "TimeoutMs": 8000
-  }
-]
-
-Then run: .\Start-AppsToTray.ps1 -ConfigFile .\my-apps.json
-
-## Using Inline Apps:
-$apps = @(
-    [pscustomobject]@{ 
-        Name = 'Calculator'
-        Path = 'C:\Windows\System32\calc.exe'
-        StartAction = 'Minimize'
-        WaitMs = 2000
+        $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+        $LogFile = Join-Path $env:TEMP "Start-AppsToTray_$timestamp.log"
     }
-)
-.\Start-AppsToTray.ps1 -Apps $apps
-
-## Using as Library:
-Dot-source to load functions without execution:
-. .\Start-AppsToTray.ps1
-$apps = @([pscustomobject]@{ Name='Test'; Path='calc.exe'; StartAction='Minimize' })
-Start-AppsToTray -Apps $apps -LogFile $logPath
+    
+    # Call the main function
+    Start-AppsToTray -Apps $appsToLaunch -LogFile $LogFile
+}
+#endregion
