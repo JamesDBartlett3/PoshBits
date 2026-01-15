@@ -3,16 +3,12 @@
     Launch multiple applications and ensure they start hidden/in the system tray (best-effort).
 
 .DESCRIPTION
-    This script takes a list of application definitions (inline PSCustomObject or JSON/PSScript config file),
-    launches each app, and attempts to unify their behavior so they appear in the system tray without
-    showing a visible window.
+    This script takes a JSON configuration file containing application definitions, launches each app,
+    and attempts to unify their behavior so they appear in the system tray without showing a visible window.
 
     Because each app implements tray behavior differently, the script uses several strategies (Hide,
     Minimize, Close) and falls back if the first approach doesn't cause the app to hide. Use the
     `StartAction` field in the app config to prefer how the app should be triggered.
-
-.PARAMETER Apps
-    Array of app configuration objects. Each object should have properties defined in CONFIGURATION PROPERTIES below.
 
 .PARAMETER ConfigFile
     Path to a JSON file containing app configurations.
@@ -24,26 +20,14 @@
     # Run with config file
     .\Start-AppsToTray.ps1 -ConfigFile .\my-apps.json
 
-.EXAMPLE
-    # Run with inline apps
-    $apps = @(
-        [pscustomobject]@{ Name = 'Tabby'; Path = 'C:\Program Files\Tabby\Tabby.exe'; StartAction = 'Hide'; WaitMs = 4000 }
-    )
-    .\Start-AppsToTray.ps1 -Apps $apps
-
-.EXAMPLE
-    # Use as library (dot-source to load functions)
-    . .\Start-AppsToTray.ps1
-    Start-AppsToTray -Apps $apps -LogFile $logPath
-
-.CONFIGURATION PROPERTIES (per app)
+.CONFIGURATION PROPERTIES (per app in JSON file)
     Name           - Friendly name (optional)
     Path           - Path to executable (required). Environment variables are expanded.
     Args           - Command-line args (optional)
     StartAction    - Preferred action: Auto (default) | Hide | Minimize | Close | ShowThenMinimize | None
     StartStyle     - Optional start style: Normal (default) | MinimizedProcess | HiddenProcess (controls Start-Process WindowStyle)
-    RunAsAdmin     - Optional boolean: $true to request running the app elevated (will prompt UAC if current session is not elevated)
-    RedirectOutput - Optional boolean: $true (default) to redirect stdout/stderr to null; will be disabled when launching elevated via UAC prompt
+    RunAsAdmin     - Optional boolean: true to request running the app elevated (will prompt UAC if current session is not elevated)
+    RedirectOutput - Optional boolean: true (default) to redirect stdout/stderr to null; will be disabled when launching elevated via UAC prompt
     WaitMs         - How long to wait for the tray behavior after applying action (ms). Default 5000
     TimeoutMs      - How long to wait for the app window to appear after launch (ms). Default 8000
     WindowTitleRegex - Optional regex pattern to match window title for complex process scenarios
@@ -55,25 +39,17 @@
     - Running apps that require elevation from a non-elevated session may fail to start.
 
 #>
-[CmdletBinding(DefaultParameterSetName='CustomApps')]
+[CmdletBinding()]
 param(
-    [Parameter(ParameterSetName='CustomApps', Mandatory=$true, Position=0)]
-    [object[]]$Apps,
-    
-    [Parameter(ParameterSetName='ConfigFile', Mandatory=$true)]
+    [Parameter(Mandatory=$true)]
     [string]$ConfigFile,
     
-    [Parameter(ParameterSetName='CustomApps')]
-    [Parameter(ParameterSetName='ConfigFile')]
+    [Parameter(Mandatory=$false)]
     [string]$LogFile
 )
 
-# Add Win32 functions for window manipulation
-try {
-    # If the type already exists, referencing it will succeed; if not, the reference will throw and we'll create it.
-    [Win32.NativeMethods] | Out-Null
-} catch {
-    Add-Type -TypeDefinition @"
+# Define NativeMethods type definition once (used in main session and passed to background jobs)
+$script:NativeMethodsTypeDef = @"
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -105,9 +81,19 @@ namespace Win32 {
 
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+        
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern int GetWindowTextLength(IntPtr hWnd);
     }
 }
-"@ -PassThru
+"@
+
+# Add Win32 functions for window manipulation in main session
+try {
+    # If the type already exists, referencing it will succeed; if not, the reference will throw and we'll create it.
+    [Win32.NativeMethods] | Out-Null
+} catch {
+    Add-Type -TypeDefinition $script:NativeMethodsTypeDef -PassThru
 }
 
 # Constants
@@ -491,8 +477,7 @@ function Wait-ForHiddenOrExit {
 function Start-AppsToTray {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $false, Position = 0)] [System.Object[]]$Apps,
-        [Parameter(Mandatory = $false)] [string]$ConfigFile,
+        [Parameter(Mandatory = $true)] [System.Object[]]$Apps,
         [Parameter(Mandatory = $false)] [string]$LogFile,
         [switch]$WhatIf
     )
@@ -504,22 +489,15 @@ function Start-AppsToTray {
         }
     }
 
-    if ($ConfigFile) {
-        if (-not (Test-Path $ConfigFile)) { throw "Config file not found: $ConfigFile" }
-        $ext = [System.IO.Path]::GetExtension($ConfigFile).ToLowerInvariant()
-        if ($ext -in '.json') { $Apps = Get-Content $ConfigFile -Raw | ConvertFrom-Json }
-        elseif ($ext -in '.ps1') { . $ConfigFile; if (-not $apps) { throw "Script did not define `$apps` variable." } }
-        else { throw "Unsupported config file type: $ext. Use .json or .ps1." }
+    if (-not $Apps -or $Apps.Count -eq 0) {
+        Write-Verbose 'No apps provided'
+        return
     }
-
-    if (-not $Apps -or $Apps.Count -eq 0) { Write-Verbose 'No apps provided'; return }
 
     # Phase 1: Launch all apps immediately
     $launchedApps = @()
     
     foreach ($app in $Apps) {
-        Write-Log "Processing app: Name=$name, Path=$path, StartAction=$startAction"
-
         # Evaluate fields with simplified property access
         $name = if ($app.Name) { $app.Name } else { [System.IO.Path]::GetFileNameWithoutExtension($app.Path) }
         $path = if ($app.Path) { [Environment]::ExpandEnvironmentVariables($app.Path) } else { $null }
@@ -533,6 +511,8 @@ function Start-AppsToTray {
         $redirectOutput = if ($null -ne $app.RedirectOutput) { [bool]$app.RedirectOutput } else { $true }
         $windowTitleRegex = $app.WindowTitleRegex
         $processNameRegex = $app.ProcessNameRegex
+
+        Write-Log "Processing app: Name=$name, Path=$path, StartAction=$startAction"
 
         $appObj = [PSCustomObject]@{
             Name = $name
@@ -679,46 +659,6 @@ function Start-AppsToTray {
     # Phase 2: Wait for windows and apply actions in parallel using background jobs
     Write-Verbose "All apps launched. Starting parallel window detection..."
     Write-Log "All apps launched. Starting parallel window detection..."
-    
-    # Prepare the NativeMethods type definition to pass to jobs
-    $nativeMethodsTypeDef = @"
-using System;
-using System.Text;
-using System.Runtime.InteropServices;
-
-namespace Win32 {
-    public class NativeMethods {
-        public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
-
-        [DllImport("user32.dll")]
-        public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
-
-        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern bool IsWindowVisible(IntPtr hWnd);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern IntPtr GetShellWindow();
-
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern IntPtr PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-        
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern int GetWindowTextLength(IntPtr hWnd);
-    }
-}
-"@
     
     $jobs = @()
     foreach ($launchedApp in $launchedApps) {
@@ -893,7 +833,7 @@ namespace Win32 {
             }
             
             return @{ Success = $succeeded; AppName = $appObj.Name }
-        } -ArgumentList $proc.Id, $appObj, $LogFile, $nativeMethodsTypeDef
+        } -ArgumentList $proc.Id, $appObj, $LogFile, $script:NativeMethodsTypeDef
         
         $jobs += [PSCustomObject]@{
             Job = $job
@@ -931,23 +871,19 @@ namespace Win32 {
 #region Script Execution
 # This block runs when the script is executed directly (not dot-sourced)
 if ($MyInvocation.InvocationName -ne '.') {
-    # Determine which apps to launch
-    $appsToLaunch = $null
-    
-    switch ($PSCmdlet.ParameterSetName) {
-        'CustomApps' {
-            $appsToLaunch = $Apps
-            Write-Verbose "Using apps provided via -Apps parameter"
+    # Load apps from config file
+    if (Test-Path $ConfigFile) {
+        $ext = [System.IO.Path]::GetExtension($ConfigFile).ToLowerInvariant()
+        if ($ext -eq '.json') {
+            $appsToLaunch = Get-Content $ConfigFile -Raw | ConvertFrom-Json
+            Write-Verbose "Loaded $($appsToLaunch.Count) app(s) from config file: $ConfigFile"
+        } else {
+            Write-Error "Unsupported config file type: $ext. Only .json files are supported."
+            exit 1
         }
-        'ConfigFile' {
-            if (Test-Path $ConfigFile) {
-                $appsToLaunch = Get-Content $ConfigFile -Raw | ConvertFrom-Json
-                Write-Verbose "Loaded apps from config file: $ConfigFile"
-            } else {
-                Write-Error "Config file not found: $ConfigFile"
-                exit 1
-            }
-        }
+    } else {
+        Write-Error "Config file not found: $ConfigFile"
+        exit 1
     }
     
     # Set default log file if not provided
