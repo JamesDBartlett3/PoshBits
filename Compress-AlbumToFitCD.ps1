@@ -317,7 +317,9 @@ if ($processedTracks.Count -gt 0) {
     Write-Host "  New total:      $(Format-DurationShort $actualTotal)"
     Write-Host "  Target was:     $(Format-DurationShort $targetDuration)"
     
-    if ($actualTotalSeconds -le $targetSeconds) {
+    # Use small tolerance (0.1 second) to account for floating-point precision only
+    $tolerance = 0.1
+    if ($actualTotalSeconds -le ($targetSeconds + $tolerance)) {
         Write-Host ""
         Write-Host "Success! Album now fits on an $TargetMinutes-minute CD." -ForegroundColor Green
     }
