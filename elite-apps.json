@@ -24,9 +24,20 @@
     "RunAsAdmin": false,
     "RedirectOutput": true,
     "StartAction": "Close",
-    "WaitMs": 3000,
-    "TimeoutMs": 15000,
+    "WaitMs": 10000,
+    "TimeoutMs": 45000,
     "WindowTitleRegex": "ED Odyssey Materials Helper",
     "ProcessNameRegex": "Elite Dangerous Odyssey Materials Helper"
+  },
+  {
+    "Name": "EliteIntel",
+    "Path": "%LOCALAPPDATA%\\Programs\\elite-intel\\elite-intel.exe",
+    "RunAsAdmin": false,
+    "RedirectOutput": true,
+    "StartAction": "Minimize",
+    "WaitMs": 8000,
+    "TimeoutMs": 30000,
+    "WindowTitleRegex": "Elite Intel",
+    "ProcessNameRegex": "Elite Intel"
   }
 ]
