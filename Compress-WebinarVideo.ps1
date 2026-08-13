@@ -20,9 +20,11 @@ Param(
   [Parameter(Mandatory = $True, Position = 0, ValueFromPipeline = $True)][string]$InputFile
   ,[Parameter(Mandatory = $False, Position = 1, ValueFromPipeline = $False)][int]$FrameRate = 10
   ,[Parameter(Mandatory = $False, Position = 2, ValueFromPipeline = $False)][ValidateSet(
-      "libx264", "libx265", "h264_nvenc", "hevc", "hevc_nvenc", "h264_amf", 
-      "hevc_amf", "h264_qsv", "hevc_qsv", "h264_vaapi", "hevc_vaapi"
+      "libx264", "libx265", "h264_nvenc", "hevc", "hevc_nvenc", "h264_amf",
+      "hevc_amf", "h264_qsv", "hevc_qsv", "h264_vaapi", "hevc_vaapi",
+      "libsvtav1", "libaom-av1", "av1_nvenc", "av1_qsv", "av1_vaapi", "av1_amf"
     )][string]$VideoCodec
+  ,[Parameter(Mandatory = $False, ValueFromPipeline = $False)][string]$Preset
   ,[Parameter(Mandatory = $False, ValueFromPipeline = $False)][string]$TrimStart = "00:00:00"
   ,[Parameter(Mandatory = $False, ValueFromPipeline = $False)][string]$TrimEnd
   ,[Parameter(Mandatory = $False, ValueFromPipeline = $False)][double]$TargetSizeMB
@@ -47,6 +49,7 @@ if ($TwoPass.IsPresent -and $TargetSizeMB -le 0) {
 [string]$appleCompatibility = $VideoCodec -like "*hevc*" -or $VideoCodec -like "*265*" ? " -tag:v hvc1" : ""
 
 $trimParams = $TrimStart ? " -ss $TrimStart" + $($TrimEnd ? " -to $TrimEnd" : "") : ""
+$presetParams = $Preset ? " -preset $Preset" : ""
 
 [string]$targetSizeParams = ""
 if ($TargetSizeMB -gt 0) {
@@ -88,6 +91,7 @@ if ($TargetSizeMB -gt 0) {
   "$trimParams",
   " -vf fps=$FrameRate",
   " -c:v $outputVideoCodec$($appleCompatibility)",
+  "$presetParams",
   "$targetSizeParams"
 )
 
